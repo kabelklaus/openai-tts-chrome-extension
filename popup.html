@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OpenAI TTS Helper</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>OpenAI TTS Helper</h1>
+    
+    <div class="form-group">
+      <label for="apiKey">OpenAI API-Schlüssel:</label>
+      <input type="password" id="apiKey" placeholder="Deinen API-Schlüssel eingeben">
+      <button id="saveApiKey" class="btn">Speichern</button>
+    </div>
+    
+    <div class="form-group">
+      <label for="voice">Stimme auswählen:</label>
+      <select id="voice">
+        <option value="alloy">Alloy</option>
+        <option value="echo">Echo</option>
+        <option value="fable">Fable</option>
+        <option value="onyx">Onyx</option>
+        <option value="nova">Nova</option>
+        <option value="shimmer">Shimmer</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="speed">Sprechgeschwindigkeit:</label>
+      <input type="range" id="speed" min="0.5" max="1.5" step="0.1" value="1.0">
+      <span id="speedValue">1.0</span>
+    </div>
+    
+    <p class="info">Wähle Text auf einer Webseite aus und klicke dann auf das Erweiterungs-Icon, um den Text vorlesen zu lassen.</p>
+    
+    <div class="status" id="status"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
