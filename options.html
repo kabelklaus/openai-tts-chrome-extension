@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>OpenAI TTS Helper</title>
+  <title>OpenAI TTS Helper - Einstellungen</title>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <h1>OpenAI TTS Helper</h1>
+    <h1>OpenAI TTS Helper - Einstellungen</h1>
     
     <div class="form-group">
       <label for="apiKey">OpenAI API-Schlüssel:</label>
@@ -32,34 +32,21 @@
       <input type="range" id="speed" min="0.5" max="1.5" step="0.1" value="1.0">
       <span id="speedValue">1.0</span>
     </div>
-
-    <div class="form-group">
-      <label for="textInput">Text zum Vorlesen:</label>
-      <div class="button-group">
-        <button id="loadSelectedText" class="secondary-button">Text aus Zwischenablage laden</button>
-      </div>
-      <textarea id="textInput" rows="4" placeholder="Text hier eingeben oder einfügen"></textarea>
-      <button id="readText" class="btn primary">Generieren</button>
+    
+    <div class="info">
+      <h2>Anleitung:</h2>
+      <ol>
+        <li>Gib deinen OpenAI API-Schlüssel ein und klicke auf "Speichern"</li>
+        <li>Wähle deine bevorzugte Stimme und Sprechgeschwindigkeit</li>
+        <li>Markiere Text auf einer Webseite</li>
+        <li>Klicke auf das Erweiterungs-Icon oder nutze Rechtsklick → "Text vorlesen"</li>
+        <li>Tastenkürzel: Strg+Shift+S (Windows) oder Cmd+Shift+S (Mac)</li>
+      </ol>
     </div>
     
-    <div id="audioControls" class="audio-controls hidden">
-      <div class="audio-player">
-        <audio id="audioPlayer" controls></audio>
-      </div>
-      <div class="control-buttons">
-        <button id="playPause" class="btn secondary">
-          <span class="play-icon">▶</span>
-          <span class="pause-icon hidden">⏸</span>
-        </button>
-        <button id="downloadAudio" class="btn secondary">
-          <span>⬇ Herunterladen</span>
-        </button>
-      </div>
-    </div>
-
     <div class="status" id="status"></div>
   </div>
   
-  <script src="popup.js"></script>
+  <script src="options.js"></script>
 </body>
-</html>
+</html> 

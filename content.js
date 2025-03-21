@@ -1,9 +1,15 @@
 // Event-Listener für Nachrichten vom Background-Script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Ping-Anfrage beantworten
+  if (request.action === 'ping') {
+    sendResponse({ status: 'ok' });
+    return true;
+  }
+  
   // Wenn die Nachricht anfordert, den ausgewählten Text zu bekommen
   if (request.action === 'getSelectedText') {
     // Hole den ausgewählten Text
-    const selectedText = window.getSelection().toString();
+    const selectedText = window.getSelection().toString().trim();
     
     console.log('Ausgewählter Text:', selectedText ? `${selectedText.substring(0, 50)}...` : 'Kein Text ausgewählt');
     
@@ -41,4 +47,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   // Wichtig für asynchrone Antworten
   return true;
+});
+
+// Event-Listener für Text-Auswahl
+document.addEventListener('mouseup', () => {
+  const selectedText = window.getSelection().toString().trim();
+  if (selectedText) {
+    // Sende den ausgewählten Text an das Popup
+    chrome.runtime.sendMessage({
+      action: 'textSelected',
+      text: selectedText
+    });
+  }
 });
