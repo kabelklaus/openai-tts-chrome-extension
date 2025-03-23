@@ -3,21 +3,26 @@
 <head>
   <title>OpenAI TTS Helper</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=600">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <h1>OpenAI TTS Helper</h1>
+    <h1 class="title">OpenAI TTS Helper</h1>
     
-    <div class="form-group">
-      <label for="apiKey">OpenAI API-Schlüssel:</label>
-      <input type="password" id="apiKey" placeholder="Deinen API-Schlüssel eingeben">
-      <button id="saveApiKey" class="btn">Speichern</button>
+    <!-- API Key Section -->
+    <div class="section">
+      <label for="apiKey" class="label">OpenAI API-Schlüssel:</label>
+      <div class="input-group">
+        <input type="password" id="apiKey" class="input" placeholder="sk-..." />
+        <button id="saveKey" class="button button-secondary">Speichern</button>
+      </div>
     </div>
-    
-    <div class="form-group">
-      <label for="voice">Stimme auswählen:</label>
-      <select id="voice">
+
+    <!-- Voice Selection -->
+    <div class="section">
+      <label for="voice" class="label">Stimme:</label>
+      <select id="voice" class="select">
         <option value="alloy">Alloy</option>
         <option value="echo">Echo</option>
         <option value="fable">Fable</option>
@@ -27,37 +32,46 @@
       </select>
     </div>
 
-    <div class="form-group">
-      <label for="speed">Sprechgeschwindigkeit:</label>
-      <input type="range" id="speed" min="0.5" max="1.5" step="0.1" value="1.0">
-      <span id="speedValue">1.0</span>
+    <!-- Speed Control -->
+    <div class="section">
+      <label class="label">
+        Sprechgeschwindigkeit: <span id="speedValue">1.0</span>
+      </label>
+      <input type="range" id="speed" min="0.25" max="4.0" step="0.25" value="1.0" class="slider" />
     </div>
 
-    <div class="form-group">
-      <label for="textInput">Text zum Vorlesen:</label>
-      <div class="button-group">
-        <button id="loadSelectedText" class="secondary-button">Text aus Zwischenablage laden</button>
-      </div>
-      <textarea id="textInput" rows="4" placeholder="Text hier eingeben oder einfügen"></textarea>
-      <button id="readText" class="btn primary">Generieren</button>
+    <!-- Text Input -->
+    <div class="section">
+      <label class="label">Text zum Vorlesen:</label>
+      <button id="pasteFromClipboard" class="button button-secondary">
+        Text aus Zwischenablage laden
+      </button>
+      <textarea id="text" class="textarea" placeholder="Text hier eingeben oder einfügen"></textarea>
     </div>
-    
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button id="generate" class="button button-primary">Generieren</button>
+    </div>
+
+    <!-- Audio Player Section -->
     <div id="audioControls" class="audio-controls hidden">
       <div class="audio-player">
         <audio id="audioPlayer" controls></audio>
       </div>
       <div class="control-buttons">
-        <button id="playPause" class="btn secondary">
+        <button id="playPause" class="button button-secondary">
           <span class="play-icon">▶</span>
           <span class="pause-icon hidden">⏸</span>
         </button>
-        <button id="downloadAudio" class="btn secondary">
+        <button id="downloadAudio" class="button button-secondary">
           <span>⬇ Herunterladen</span>
         </button>
       </div>
     </div>
 
-    <div class="status" id="status"></div>
+    <!-- Status Messages -->
+    <div id="status" class="status"></div>
   </div>
   
   <script src="popup.js"></script>

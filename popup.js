@@ -1,315 +1,201 @@
-// Beim Laden der Seite: Cache prüfen
+// Cache keys
+const CACHE_KEYS = {
+    API_KEY: 'openai_api_key',
+    VOICE: 'selected_voice',
+    SPEED: 'speech_speed',
+    LAST_TEXT: 'last_text'
+};
+
+// DOM Elements
+const elements = {
+    apiKey: document.getElementById('apiKey'),
+    saveKey: document.getElementById('saveKey'),
+    voice: document.getElementById('voice'),
+    speed: document.getElementById('speed'),
+    speedValue: document.getElementById('speedValue'),
+    text: document.getElementById('text'),
+    pasteFromClipboard: document.getElementById('pasteFromClipboard'),
+    generate: document.getElementById('generate'),
+    status: document.getElementById('status'),
+    audioControls: document.getElementById('audioControls'),
+    audioPlayer: document.getElementById('audioPlayer'),
+    playPause: document.getElementById('playPause'),
+    playIcon: document.querySelector('.play-icon'),
+    pauseIcon: document.querySelector('.pause-icon'),
+    downloadAudio: document.getElementById('downloadAudio')
+};
+
+// Load cached values
 document.addEventListener('DOMContentLoaded', () => {
-  // Lade gespeicherte Einstellungen
-  chrome.storage.local.get(['apiKey', 'voice', 'speed'], (result) => {
-    if (result.apiKey) {
-      document.getElementById('apiKey').value = result.apiKey;
-      console.log('API-Schlüssel aus dem Speicher geladen');
-    }
-    
-    if (result.voice) {
-      document.getElementById('voice').value = result.voice;
-      console.log('Stimme aus dem Speicher geladen:', result.voice);
-    }
-    
-    if (result.speed) {
-      document.getElementById('speed').value = result.speed;
-      document.getElementById('speedValue').textContent = result.speed;
-      console.log('Geschwindigkeit aus dem Speicher geladen:', result.speed);
-    }
-  });
-
-  // Funktion zum Überprüfen und Injizieren des Content Scripts
-  async function ensureContentScriptLoaded(tabId) {
-    try {
-      // Hole Tab-Informationen
-      const tab = await chrome.tabs.get(tabId);
-      
-      // Überprüfe, ob es sich um eine chrome:// URL handelt
-      if (tab.url.startsWith('chrome://')) {
-        throw new Error('Text kann nicht von Chrome-System-Seiten geladen werden');
-      }
-      
-      // Versuche eine Test-Nachricht zu senden
-      await chrome.tabs.sendMessage(tabId, { action: 'ping' });
-    } catch (error) {
-      // Wenn es eine chrome:// URL ist, werfe den Fehler weiter
-      if (error.message.includes('Chrome-System-Seiten')) {
-        throw error;
-      }
-      
-      // Wenn das Content Script nicht antwortet, injiziere es
-      console.log('Content Script wird injiziert...');
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: ['content.js']
-      });
-      // Warte kurz, damit das Script geladen werden kann
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-  }
-
-  // Funktion zum Laden des Textes aus der Zwischenablage
-  async function loadClipboardText() {
-    const status = document.getElementById('status');
-    try {
-      // Prüfe, ob die Berechtigung vorhanden ist
-      const permissions = await navigator.permissions.query({name: 'clipboard-read'});
-      
-      if (permissions.state === 'denied') {
-        throw new Error('Keine Berechtigung für Zwischenablage-Zugriff');
-      }
-      
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        const textInput = document.getElementById('textInput');
-        textInput.value = text;
-        status.textContent = 'Text aus Zwischenablage geladen!';
-        status.className = 'status success';
-        setTimeout(() => {
-          status.textContent = '';
-          status.className = 'status';
-        }, 2000);
-        // Fokussiere das Textfeld und scrolle zum Ende
-        textInput.focus();
-        textInput.scrollTop = textInput.scrollHeight;
-        return true;
-      } else {
-        status.textContent = 'Zwischenablage ist leer';
-        status.className = 'status error';
-        setTimeout(() => {
-          status.textContent = '';
-          status.className = 'status';
-        }, 2000);
-        return false;
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Zwischenablage:', error);
-      let errorMessage = 'Fehler beim Laden der Zwischenablage';
-      
-      if (error.message.includes('Berechtigung')) {
-        errorMessage = 'Bitte erlaube den Zugriff auf die Zwischenablage in den Chrome-Einstellungen';
-      } else if (error.name === 'NotAllowedError') {
-        errorMessage = 'Zugriff auf Zwischenablage nicht erlaubt. Bitte prüfe die Seiten-Einstellungen.';
-      }
-      
-      status.textContent = errorMessage;
-      status.className = 'status error';
-      setTimeout(() => {
-        status.textContent = '';
-        status.className = 'status';
-      }, 4000); // Längere Anzeigezeit für Fehlermeldungen
-      return false;
-    }
-  }
-
-  // Event-Listener für den "Text aus Zwischenablage laden" Button
-  document.getElementById('loadSelectedText').addEventListener('click', async () => {
-    const textWasLoaded = await loadClipboardText();
-    if (textWasLoaded) {
-      // Optional: Starte die Vorlesung automatisch
-      // document.getElementById('readText').click();
-    }
-  });
-
-  // API-Schlüssel speichern
-  document.getElementById('saveApiKey').addEventListener('click', () => {
-    const apiKey = document.getElementById('apiKey').value.trim();
-    if (apiKey) {
-      chrome.storage.local.set({apiKey}, () => {
-        const status = document.getElementById('status');
-        status.textContent = 'API-Schlüssel wurde gespeichert!';
-        status.className = 'status success';
-        setTimeout(() => {
-          status.textContent = '';
-          status.className = 'status';
-        }, 2000);
-        console.log('API-Schlüssel gespeichert', new Date());
-      });
-    } else {
-      const status = document.getElementById('status');
-      status.textContent = 'Bitte gib einen API-Schlüssel ein!';
-      status.className = 'status error';
-    }
-  });
-  
-  // Stimme ändern und speichern
-  document.getElementById('voice').addEventListener('change', (e) => {
-    const voice = e.target.value;
-    chrome.storage.local.set({voice}, () => {
-      console.log('Stimme gespeichert:', voice);
-    });
-  });
-  
-  // Geschwindigkeit ändern und speichern
-  document.getElementById('speed').addEventListener('input', (e) => {
-    const speed = e.target.value;
-    document.getElementById('speedValue').textContent = speed;
-    chrome.storage.local.set({speed}, () => {
-      console.log('Geschwindigkeit gespeichert:', speed);
-    });
-  });
-
-  // Text in Sätze aufteilen
-  function splitIntoSentences(text) {
-    // Teilt den Text an Punkten, Ausrufezeichen und Fragezeichen, behält die Satzzeichen
-    return text.match(/[^.!?]+[.!?]+/g) || [text];
-  }
-
-  // Globale Variablen für Audio-Steuerung
-  let currentAudioUrl = null;
-  let audioPlayer = null;
-  let isPlaying = false;
-
-  // Audio-Player initialisieren
-  audioPlayer = document.getElementById('audioPlayer');
-  const playPauseButton = document.getElementById('playPause');
-  const downloadButton = document.getElementById('downloadAudio');
-  
-  // Play/Pause Button Event Listener
-  playPauseButton.addEventListener('click', () => {
-    if (isPlaying) {
-      audioPlayer.pause();
-    } else {
-      audioPlayer.play();
-    }
-  });
-
-  // Audio Player Events
-  audioPlayer.addEventListener('play', () => {
-    isPlaying = true;
-    document.querySelector('.play-icon').classList.add('hidden');
-    document.querySelector('.pause-icon').classList.remove('hidden');
-  });
-
-  audioPlayer.addEventListener('pause', () => {
-    isPlaying = false;
-    document.querySelector('.play-icon').classList.remove('hidden');
-    document.querySelector('.pause-icon').classList.add('hidden');
-  });
-
-  // Download Button Event Listener
-  downloadButton.addEventListener('click', () => {
-    if (currentAudioUrl) {
-      const a = document.createElement('a');
-      a.href = currentAudioUrl;
-      a.download = 'tts_audio.mp3';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  });
-
-  // Modifizierte generateSentenceAudio Funktion
-  async function generateSentenceAudio(sentence, apiKey, voice, speed) {
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: sentence.trim(),
-        voice: voice,
-        speed: speed
-      })
+    // Load API key
+    chrome.storage.local.get([CACHE_KEYS.API_KEY], (result) => {
+        if (result[CACHE_KEYS.API_KEY]) {
+            elements.apiKey.value = result[CACHE_KEYS.API_KEY];
+        }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API-Fehler: ${response.status} ${JSON.stringify(errorData)}`);
+    // Load voice preference
+    const cachedVoice = localStorage.getItem(CACHE_KEYS.VOICE);
+    if (cachedVoice) {
+        elements.voice.value = cachedVoice;
     }
 
-    const audioData = await response.arrayBuffer();
-    const blob = new Blob([audioData], { type: 'audio/mpeg' });
-    return URL.createObjectURL(blob);
-  }
-
-  // Modifizierter Click-Handler für den "Generieren" Button
-  document.getElementById('readText').addEventListener('click', async () => {
-    const text = document.getElementById('textInput').value.trim();
-    if (!text) {
-      const status = document.getElementById('status');
-      status.textContent = 'Bitte gib einen Text ein!';
-      status.className = 'status error';
-      return;
+    // Load speed preference
+    const cachedSpeed = localStorage.getItem(CACHE_KEYS.SPEED);
+    if (cachedSpeed) {
+        elements.speed.value = cachedSpeed;
+        elements.speedValue.textContent = cachedSpeed;
     }
 
-    // Hole API-Schlüssel und Einstellungen
-    chrome.storage.local.get(['apiKey', 'voice', 'speed'], async (result) => {
-      const apiKey = result.apiKey;
-      const voice = result.voice || 'nova';
-      const speed = parseFloat(result.speed) || 1.0;
-      
-      if (!apiKey) {
-        const status = document.getElementById('status');
-        status.textContent = 'Bitte zuerst API-Schlüssel speichern!';
-        status.className = 'status error';
+    // Load last used text
+    const cachedText = localStorage.getItem(CACHE_KEYS.LAST_TEXT);
+    if (cachedText) {
+        elements.text.value = cachedText;
+    }
+});
+
+// Save API Key
+elements.saveKey.addEventListener('click', () => {
+    const apiKey = elements.apiKey.value.trim();
+    if (!apiKey) {
+        showStatus('Bitte geben Sie einen API-Schlüssel ein', 'error');
         return;
-      }
+    }
 
-      const status = document.getElementById('status');
-      const readButton = document.getElementById('readText');
-      
-      // Deaktiviere den Button während der Verarbeitung
-      readButton.disabled = true;
-      readButton.textContent = 'Wird generiert...';
+    chrome.storage.local.set({ [CACHE_KEYS.API_KEY]: apiKey }, () => {
+        showStatus('API-Schlüssel gespeichert', 'success');
+    });
+});
 
-      try {
-        // Generiere Audio für den gesamten Text
-        status.textContent = 'Generiere Audio...';
-        status.className = 'status';
-        
-        // Wenn es eine vorherige Audio-URL gibt, diese freigeben
-        if (currentAudioUrl) {
-          URL.revokeObjectURL(currentAudioUrl);
+// Update speed value display and cache
+elements.speed.addEventListener('input', (e) => {
+    const speed = e.target.value;
+    elements.speedValue.textContent = speed;
+    localStorage.setItem(CACHE_KEYS.SPEED, speed);
+});
+
+// Cache voice selection
+elements.voice.addEventListener('change', (e) => {
+    localStorage.setItem(CACHE_KEYS.VOICE, e.target.value);
+});
+
+// Paste from clipboard
+elements.pasteFromClipboard.addEventListener('click', async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        elements.text.value = text;
+        localStorage.setItem(CACHE_KEYS.LAST_TEXT, text);
+        showStatus('Text aus Zwischenablage eingefügt', 'success');
+    } catch (error) {
+        showStatus('Fehler beim Lesen der Zwischenablage', 'error');
+    }
+});
+
+// Cache text input
+elements.text.addEventListener('input', (e) => {
+    localStorage.setItem(CACHE_KEYS.LAST_TEXT, e.target.value);
+});
+
+// Generate audio
+elements.generate.addEventListener('click', async () => {
+    const text = elements.text.value.trim();
+    if (!text) {
+        showStatus('Bitte geben Sie Text ein', 'error');
+        return;
+    }
+
+    elements.generate.disabled = true;
+    showStatus('Generiere Audio...', 'info');
+
+    try {
+        const apiKey = await getApiKey();
+        if (!apiKey) {
+            throw new Error('Kein API-Schlüssel gefunden');
         }
 
-        // Generiere neue Audio
-        const audioUrl = await generateSentenceAudio(text, apiKey, voice, speed);
-        currentAudioUrl = audioUrl;
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'tts-1',
+                input: text,
+                voice: elements.voice.value,
+                speed: parseFloat(elements.speed.value)
+            })
+        });
 
-        // Aktualisiere Audio-Player
-        const audioPlayer = document.getElementById('audioPlayer');
-        audioPlayer.src = audioUrl;
-        
-        // Zeige Audio-Controls an
-        document.getElementById('audioControls').classList.remove('hidden');
-        
-        // Starte Wiedergabe automatisch
-        audioPlayer.play();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // Status aktualisieren
-        status.textContent = 'Audio wurde erfolgreich generiert!';
-        status.className = 'status success';
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
         
-        // Button zurücksetzen
-        readButton.disabled = false;
-        readButton.textContent = 'Generieren';
+        // Update audio player
+        elements.audioPlayer.src = url;
+        elements.audioControls.classList.remove('hidden');
+        elements.audioPlayer.play();
         
-      } catch (error) {
-        console.error('Fehler bei der Audio-Generierung:', error);
-        status.textContent = `Fehler: ${error.message}`;
-        status.className = 'status error';
-        readButton.disabled = false;
-        readButton.textContent = 'Generieren';
-      }
-    });
-  });
+        // Update play/pause button state
+        updatePlayPauseState(true);
 
-  // Listener für markierten Text (wenn Text während Popup offen markiert wird)
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'textSelected') {
-      const textInput = document.getElementById('textInput');
-      textInput.value = request.text;
-      const status = document.getElementById('status');
-      status.textContent = 'Neuer Text wurde geladen!';
-      status.className = 'status success';
-      setTimeout(() => {
-        status.textContent = '';
-        status.className = 'status';
-      }, 2000);
+        // Enable download button
+        elements.downloadAudio.onclick = () => {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tts-audio.mp3';
+            a.click();
+        };
+
+        showStatus('Audio erfolgreich generiert', 'success');
+    } catch (error) {
+        console.error('Error:', error);
+        showStatus(`Fehler: ${error.message}`, 'error');
+    } finally {
+        elements.generate.disabled = false;
     }
-  });
 });
+
+// Audio player controls
+elements.playPause.addEventListener('click', () => {
+    if (elements.audioPlayer.paused) {
+        elements.audioPlayer.play();
+        updatePlayPauseState(true);
+    } else {
+        elements.audioPlayer.pause();
+        updatePlayPauseState(false);
+    }
+});
+
+elements.audioPlayer.addEventListener('ended', () => {
+    updatePlayPauseState(false);
+});
+
+// Helper functions
+async function getApiKey() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get([CACHE_KEYS.API_KEY], (result) => {
+            resolve(result[CACHE_KEYS.API_KEY]);
+        });
+    });
+}
+
+function showStatus(message, type = '') {
+    elements.status.textContent = message;
+    elements.status.className = 'status ' + type;
+    
+    if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+            elements.status.textContent = '';
+            elements.status.className = 'status';
+        }, 3000);
+    }
+}
+
+function updatePlayPauseState(isPlaying) {
+    elements.playIcon.classList.toggle('hidden', isPlaying);
+    elements.pauseIcon.classList.toggle('hidden', !isPlaying);
+}
